@@ -1,3 +1,15 @@
+"""
+This repository consists of the implementation of the Final year BTech project 
+Feature Point Detection in LiDAR point cloud under the guidance of 
+Dr. Subhasree M, Associate Professor, CSED, NIT Calicut. 
+The code belongs to Gowri B Kumar and J Sivsankar, 
+students of National Institute of Technology, Calicut. 
+
+"""
+
+
+# import all the necessary libraries. 
+# you may use pip install <libraryname> for installing it into your virtual environment
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import KDTree
@@ -7,6 +19,8 @@ from pathlib import Path
 import re
 import threading
 
+# this function is used for naming the output csv file 
+# containing the detected feature point set
 def extract_number(string):
     match = re.search(r'\d+$', string)
     if match:
@@ -14,6 +28,9 @@ def extract_number(string):
     else:
         return None
 
+
+# this code contains an optimised version of calculate_normal functions
+# as the name suggests it calculates normals of a point wrt its 'k' neighbouring points
 def calculate_normals(points, k=10):
     """
     tree = KDTree(points)
@@ -46,7 +63,7 @@ def calculate_normals(points, k=10):
     for i, point_indices in enumerate(indices):
         neighbors = points[point_indices]
 
-        # Calculate the covariance matrix
+        # Compute the covariance matrix
         covariance_matrix = np.cov(neighbors, rowvar=False)
 
         # Compute the eigenvalues and eigenvectors
@@ -59,7 +76,8 @@ def calculate_normals(points, k=10):
 
     return np.array(normals)
 
-
+# this fnction is responsible for automatically dering the appropriate threshold value
+# for feature point detection in the input point set
 def derive_threshold(points, min_samples=5, eps=0.1, percentile=100):
     # Perform DBSCAN clustering on normal vectors
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
@@ -77,14 +95,18 @@ def derive_threshold(points, min_samples=5, eps=0.1, percentile=100):
 
 
     # Derive threshold based on percentiles of distances
+    # the concept of large of largest
     percentile_threshold = np.percentile(distances, percentile)
     return percentile_threshold
+
+
+# this function orchestrates every operation or stage of feature point detection
 
 def feature_threads(csv_file):
     lidar_data = pd.read_csv(csv_file)
     lidar_points = lidar_data[['x', 'y', 'z']].values
     lidar_normals = calculate_normals(lidar_points)
-    print(lidar_normals[0])
+    #print(lidar_normals[0])
     threshold = derive_threshold(lidar_normals)
     if threshold>0.6:
       threshold=0.5999
@@ -123,7 +145,10 @@ def feature_threads(csv_file):
     pd.DataFrame(feature_points, columns=['x', 'y', 'z']).to_csv(output_file, index=False)
     return num_feature_normals
 
+
+# starting point of the code
 if __name__ == '__main__':
+    # add all the names of input files you wish to process
     csv_files = ["data_bunny.csv"]#,"rf14s.csv"]#,"rf15s.csv"]#"drill2.csv"]#, "model_bunny.csv"]
     threads = []
     all_normals=[]
